@@ -1,0 +1,77 @@
+<?php
+
+session_start();
+
+?>
+
+<?php
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+?>
+
+<html>
+<head>
+<meta http-equiv='Content-type' content='text/html; charset=utf-8'>
+<title>Dodawanie produktu</title>
+</head>
+<body bgcolor="white">
+
+<h2 align=center>DODAWANIE PRODUKTU</h2>
+
+
+
+<?php
+
+// Zczytanie danych od użytkownika.
+$produkt = $_POST['produkt'];
+$ile = $_POST['ile'];
+
+// Sprawdzenie, czy użytkownik wprowadzą wszystkie niezbędne dane.
+if ($produkt == "" || $ile == "") {
+    echo "<p> Nie podano wszystkich danych. </p>";
+    exit;
+}
+
+
+$conn = oci_connect("af394182", "baboonek26");
+if (!$conn) {
+    $e = oci_error();
+    echo "Wystąpił problem z połączeniem się z bazą danych ({$e['message']})";
+    exit;
+}
+
+// Wyszukiwanie aktualnego stanu danego produktu w magazynie.
+$r = oci_parse($conn, "SELECT ilosc FROM produkty WHERE nazwa = '" . $produkt . "'");
+oci_execute($r);
+$rowCount = oci_fetch_all($r, $all, null, null, OCI_FETCHSTATEMENT_BY_ROW + OCI_NUM);
+
+if ($rowCount == 0) {
+    echo "Produkt o podanej nazwie nie istnieje, podano błędną nazwę produktu.";
+    exit;
+}
+
+// Uaktualnienie stanu magazynu (powiększenie stanu danego produktu o nowo wyprodukowaną ilość).
+$nowaIlosc = $all[0][0] + $ile;
+$r2 = oci_parse($conn, "UPDATE produkty SET ilosc = " . $nowaIlosc . " WHERE nazwa = '" . $produkt . "'");
+oci_execute($r2);
+oci_commit($conn);
+
+echo "<p> Produkt pomyślnie dodano do magazynu.</p>";
+
+oci_close($conn);
+
+?>
+
+
+<br>
+<br>
+
+<form action="stronaGlowna.php" method="post">
+<input type="submit" value="MENU GŁÓWNE">
+</form>
+
+
+</body>
+</html>
